@@ -22,45 +22,40 @@ const createVenta = async (req, res) => {
     }
 
     try {
+        // Iniciamos transacción para que si falla el trigger o el detalle, no se guarde nada
         await db.promise().query('START TRANSACTION');
 
-        // 1. Validate Stock first
-        for (const det of detalles) {
-            const [rows] = await db.promise().query('SELECT stock, nombre FROM medicamento WHERE id_medicamento = ? FOR UPDATE', [det.id_medicamento]);
-            if (rows.length === 0) {
-                throw new Error(`Medicamento no encontrado (ID: ${det.id_medicamento})`);
-            }
-            if (rows[0].stock < det.cantidad) {
-                throw new Error(`Stock insuficiente para el producto ${rows[0].nombre}. Disponible: ${rows[0].stock}`);
-            }
-        }
-
-        // 2. Insert into comprobante
-        const fecha = new Date().toISOString().slice(0, 10);
-        const [compResult] = await db.promise().query(
-            `INSERT INTO comprobante (tipo, serie, fecha, total, id_cliente, id_usuario) VALUES (?, ?, ?, ?, ?, ?)`,
-            [tipo || 'Boleta', serie || 'B001', fecha, total, id_cliente, id_usuario]
+        // 1. Usar el Procedimiento Almacenado (SP) para registrar la cabecera
+        await db.promise().query(
+            `CALL sp_crear_comprobante(?, ?, ?, ?, ?, @out_id)`,
+            [tipo || 'Boleta', serie || 'B001', id_cliente, id_usuario, total]
         );
-        const id_comprobante = compResult.insertId;
+        
+        // Obtener el ID generado por el SP
+        const [outIdResult] = await db.promise().query('SELECT @out_id as id_comprobante');
+        const id_comprobante = outIdResult[0].id_comprobante;
 
-        // 3. Insert into detalle_comprobante & update stock
+        // 2. Insertar detalles
+        // NOTA: Los Triggers de MariaDB (trg_validar_stock y trg_restar_stock)
+        // se encargarán automáticamente de validar que haya stock y de restarlo.
         for (const det of detalles) {
             await db.promise().query(
                 `INSERT INTO detalle_comprobante (cantidad, precio, subtotal, id_comprobante, id_medicamento) VALUES (?, ?, ?, ?, ?)`,
                 [det.cantidad, det.precio, det.subtotal, id_comprobante, det.id_medicamento]
             );
-
-            await db.promise().query(
-                `UPDATE medicamento SET stock = stock - ? WHERE id_medicamento = ?`,
-                [det.cantidad, det.id_medicamento]
-            );
         }
 
         await db.promise().query('COMMIT');
-        res.status(201).json({ message: 'Venta registrada exitosamente', id_comprobante });
+        res.status(201).json({ message: 'Venta registrada exitosamente usando SP y Triggers', id_comprobante });
     } catch (err) {
         await db.promise().query('ROLLBACK');
         console.error(err);
+        
+        // Si el error fue lanzado por nuestro trigger (Stock insuficiente)
+        if (err.sqlState === '45000') {
+            return res.status(400).json({ message: err.sqlMessage });
+        }
+        
         res.status(500).json({ message: 'Error al registrar la venta', error: err.message });
     }
 };
