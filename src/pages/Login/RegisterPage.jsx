@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Pill, Activity, ArrowRight, Loader2 } from 'lucide-react';
+import { UserPlus, Activity, ArrowRight, Loader2 } from 'lucide-react';
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [usuario, setUsuario] = useState('');
+  const [correo, setCorreo] = useState('');
   const [clave, setClave] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { register } = useAuth();
   const navigate = useNavigate();
 
   const manejarEnvio = async (e) => {
@@ -16,11 +17,12 @@ export default function LoginPage() {
     setError('');
     setIsLoading(true);
     
-    const { success, message } = await login(usuario, clave);
+    const { success, message } = await register(usuario, correo, clave);
     if (success) {
-      navigate('/dashboard');
+      alert('Registro exitoso. Ahora puede iniciar sesión.');
+      navigate('/');
     } else {
-      setError(message || 'Usuario o contraseña incorrectos.');
+      setError(message || 'Error al registrar.');
       setIsLoading(false);
     }
   };
@@ -41,14 +43,14 @@ export default function LoginPage() {
           <div className="flex flex-col items-center mb-10">
             <div className="bg-white/20 p-4 rounded-full border border-white/30 shadow-inner mb-4 relative group">
               <div className="absolute inset-0 bg-teal-400 rounded-full blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
-              <Activity className="w-8 h-8 text-teal-100 relative z-10" />
+              <UserPlus className="w-8 h-8 text-teal-100 relative z-10" />
             </div>
             <h1 className="text-3xl font-bold text-white tracking-tight font-sans">Nova Salud</h1>
-            <p className="text-teal-100/80 mt-2 text-sm font-medium tracking-wide">SISTEMA ADMINISTRATIVO</p>
+            <p className="text-teal-100/80 mt-2 text-sm font-medium tracking-wide">CREAR CUENTA ADMINISTRADOR</p>
           </div>
 
           {/* Form */}
-          <form onSubmit={manejarEnvio} className="space-y-6">
+          <form onSubmit={manejarEnvio} className="space-y-5">
             <div className="space-y-2">
               <label className="text-sm font-medium text-teal-50 ml-1">Usuario</label>
               <div className="relative group">
@@ -56,9 +58,22 @@ export default function LoginPage() {
                   type="text" 
                   value={usuario}
                   onChange={(e) => setUsuario(e.target.value)}
-                  placeholder="Ingrese su usuario" 
+                  placeholder="Ej. admin" 
                   className="w-full bg-white/5 border border-white/10 text-white placeholder:text-teal-100/50 px-4 py-3 rounded-xl outline-none focus:bg-white/10 focus:border-teal-400/50 focus:ring-1 focus:ring-teal-400/50 transition-all duration-300"
                   required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-teal-50 ml-1">Correo Electrónico (Opcional)</label>
+              <div className="relative group">
+                <input 
+                  type="email" 
+                  value={correo}
+                  onChange={(e) => setCorreo(e.target.value)}
+                  placeholder="Ej. admin@novasalud.com" 
+                  className="w-full bg-white/5 border border-white/10 text-white placeholder:text-teal-100/50 px-4 py-3 rounded-xl outline-none focus:bg-white/10 focus:border-teal-400/50 focus:ring-1 focus:ring-teal-400/50 transition-all duration-300"
                 />
               </div>
             </div>
@@ -70,7 +85,7 @@ export default function LoginPage() {
                   type="password" 
                   value={clave}
                   onChange={(e) => setClave(e.target.value)}
-                  placeholder="Ingrese su contraseña" 
+                  placeholder="Cree una contraseña segura" 
                   className="w-full bg-white/5 border border-white/10 text-white placeholder:text-teal-100/50 px-4 py-3 rounded-xl outline-none focus:bg-white/10 focus:border-teal-400/50 focus:ring-1 focus:ring-teal-400/50 transition-all duration-300"
                   required
                 />
@@ -86,22 +101,22 @@ export default function LoginPage() {
             <button 
               type="submit" 
               disabled={isLoading}
-              className="w-full bg-teal-500 hover:bg-teal-400 text-white font-semibold py-3.5 px-4 rounded-xl transition-all duration-300 flex justify-center items-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(20,184,166,0.3)] hover:shadow-[0_0_25px_rgba(20,184,166,0.5)] transform hover:-translate-y-0.5 active:translate-y-0"
+              className="w-full bg-teal-500 hover:bg-teal-400 text-white font-semibold py-3.5 px-4 rounded-xl transition-all duration-300 flex justify-center items-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(20,184,166,0.3)] hover:shadow-[0_0_25px_rgba(20,184,166,0.5)] transform hover:-translate-y-0.5 active:translate-y-0 mt-2"
             >
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <>
-                  <span>Ingresar al Sistema</span>
+                  <span>Registrar</span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
             </button>
-
+            
             <div className="text-center mt-6">
-              <a href="/register" className="text-teal-100/70 hover:text-white text-sm font-medium transition-colors">
-                ¿No tienes cuenta? Regístrate aquí
-              </a>
+              <Link to="/" className="text-teal-100/70 hover:text-white text-sm font-medium transition-colors">
+                ¿Ya tienes cuenta? Iniciar sesión
+              </Link>
             </div>
           </form>
 

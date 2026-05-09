@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './router/ProtectedRoute';
 import LoginPage from './pages/Login/LoginPage';
+import RegisterPage from './pages/Login/RegisterPage';
 import Dashboard from './pages/Dashboard/DashboardPage.jsx';
 import Layout from './components/Layout/Layout.jsx';
 import NuevaVenta from './pages/NuevaVenta/NuevaVenta.jsx';
@@ -16,6 +17,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout/>}>
               <Route path="/dashboard" element={<Dashboard />} />
